@@ -1,7 +1,9 @@
 (function() {
   'use strict';
 
-  const renderMovies = function(movies) {
+  const movies =[];
+
+  const renderMovies = function() {
     $('#listings').empty();
 
     for (const movie of movies) {
@@ -12,16 +14,16 @@
 
       $title.attr({
         'data-position': 'top',
-        'data-tooltip': movie.Title
+        'data-tooltip': movie.title
       });
 
-      $title.tooltip({ delay: 50 }).text(movie.Title);
+      $title.tooltip({ delay: 50 }).text(movie.title);
 
       const $poster = $('<img>').addClass('poster');
 
       $poster.attr({
-        src: movie.Poster,
-        alt: `${movie.Poster} Poster`
+        src: movie.poster,
+        alt: `${movie.poster} Poster`
       });
 
       $content.append($title, $poster);
@@ -39,7 +41,7 @@
 
       const $modal = $('<div>').addClass('modal').attr('id', movie.id);
       const $modalContent = $('<div>').addClass('modal-content');
-      const $modalHeader = $('<h4>').text(movie.Title);
+      const $modalHeader = $('<h4>').text(movie.title);
       const $movieYear = $('<h6>').text(`Released in ${movie.year}`);
       const $modalText = $('<p>').text(movie.plot);
 
@@ -70,19 +72,38 @@
 
       fetch('http://www.omdbapi.com/?i=tt3896198&apikey=4e26a6e0&s=' + userInput)
         .then(function(response) {
-          response.json()
-          .then(function(data){
-            console.log(data);
-            renderMovies(data.Search);
-          })
-        })
-        .catch(function(err) {
-          console.log(new Error(err))
+          return response.json()
+        }).then(function(data){
+            // console.log(data.Search);
+            let promiseArr = [];
+            for (const searchResult of data.Search) {
+                promiseArr.push(axios.get(`http://www.omdbapi.com/?apikey=4e26a6e0&i=${searchResult.imdbID}&plot=full`));
+            }
+            return Promise.all(promiseArr);
+          }).then(promises => {
+            for (const promise of promises) {
+              const movieObj = promise.data;
+              console.log(movieObj);
+              movies.push({
+                'id': movieObj.imdbID,
+                'poster': movieObj.Poster,
+                'title': movieObj.Title,
+                'year': movieObj.Year,
+                'plot': movieObj.Plot
+              })
+            }
+            renderMovies();
+          // })
+          // })
+        // .catch(function(err) {
+        //   console.log(new Error(err))
         });
 
-    } else {
-      console.log("Wow")
-      document.forms.searchForm.searchInput.placeholder = "Input can't be blank";
-    }
+    // } else {
+    //   console.log("Wow")
+    //   document.forms.searchForm.searchInput.placeholder = "Input can't be blank";
+  }
   });
 })();
+
+            // renderMovies(data.Search);
